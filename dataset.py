@@ -18,11 +18,9 @@ class TrainingDataset(Dataset):
 def LoadDataset(split, data_path, n_jobs=8, train_set='train', dev_set='dev', batch_size=8, cuda = True):
     if split == 'train':
         shuffle = True
-        dataset_file = train_set + '.csv'
     else:
         shuffle = False
-        dataset_file = dev_set + '.csv'
 
-    ds = TrainingDataset(os.path.join(data_path, dataset_file))
+    ds = TrainingDataset(os.path.join(data_path))
 
     return  DataLoader(ds, batch_size=batch_size, shuffle=shuffle, drop_last=False, num_workers=n_jobs, pin_memory=cuda)
