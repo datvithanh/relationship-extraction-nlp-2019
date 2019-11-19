@@ -1,3 +1,4 @@
+#utils
 import re
 import numpy as np
 import nltk
@@ -79,9 +80,6 @@ def load_data_and_labels(path):
         sentence = " ".join(tokens)
         data.append([id, sentence, e1, e2, relation])
 
-    # print(path)
-    # print("max sentence length = {}\n".format(max_sentence_length))
-
     df = pd.DataFrame(data=data, columns=["id", "sentence", "e1", "e2", "relation"])
 
     pos1, pos2 = get_relative_position(df, 90)
@@ -89,29 +87,12 @@ def load_data_and_labels(path):
     df['label'] = [class2label[r] for r in df['relation']]
 
     # Text Data
-    # x_text = df['sentence'].tolist()
     e1 = df['e1'].tolist()
     e2 = df['e2'].tolist()
 
     # Label Data
     y = df['label']
     labels_flat = y.values.ravel()
-    # labels_count = np.unique(labels_flat).shape[0]
-
-    # # convert class labels from scalars to one-hot vectors
-    # # 0  => [1 0 0 0 0 ... 0 0 0 0 0]
-    # # 1  => [0 1 0 0 0 ... 0 0 0 0 0]
-    # # ...
-    # # 18 => [0 0 0 0 0 ... 0 0 0 0 1]
-    # def dense_to_one_hot(labels_dense, num_classes):
-    #     num_labels = labels_dense.shape[0]
-    #     index_offset = np.arange(num_labels) * num_classes
-    #     labels_one_hot = np.zeros((num_labels, num_classes))
-    #     labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
-    #     return labels_one_hot
-
-    # labels = dense_to_one_hot(labels_flat, labels_count)
-    # labels = labels.astype(np.uint8)
 
     return all_tokens, labels_flat, e1, e2, pos1, pos2
 
@@ -132,4 +113,7 @@ def get_relative_position(df, max_sentence_length):
         pos1.append(p1)
         pos2.append(p2)
 
-        return pos1, pos2
+    return pos1, pos2
+
+if __name__ == "__main__":
+    all_tokens, labels_flat, e1, e2, pos1, pos2 = load_data_and_labels('data/SemEval2010_task8_training/TRAIN_FILE.TXT')
