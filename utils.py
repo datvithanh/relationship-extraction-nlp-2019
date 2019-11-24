@@ -15,6 +15,8 @@ class2label = {'Other': 0,
                'Member-Collection(e1,e2)': 15, 'Member-Collection(e2,e1)': 16,
                'Content-Container(e1,e2)': 17, 'Content-Container(e2,e1)': 18}
 
+pos2id = { 0: 0, 13: 155,  14: 156,  15: 157,  16: 158,  17: 159,  18: 160,  19: 161,  20: 70,  21: 71,  22: 72,  23: 73,  24: 74,  25: 75,  26: 76,  27: 77,  28: 78,  29: 79,  30: 80,  31: 81,  32: 82,  33: 83,  34: 84,  35: 85,  36: 86,  37: 87,  38: 88,  39: 89,  40: 90,  41: 91,  42: 92,  43: 93,  44: 94,  45: 95,  46: 96,  47: 97,  48: 98,  49: 99,  50: 100,  51: 101,  52: 102,  53: 103,  54: 104,  55: 105,  56: 106,  57: 107,  58: 108,  59: 109,  60: 110,  61: 111,  62: 63,  63: 64,  64: 65,  65: 66,  66: 67,  67: 68,  68: 69,  69: 47,  70: 48,  71: 49,  72: 50,  73: 51,  74: 52,  75: 53,  76: 1,  77: 2,  78: 3,  79: 4,  80: 5,  81: 6,  82: 7,  83: 8,  84: 9,  85: 10,  86: 11,  87: 12,  88: 13,  89: 14,  90: 15,  91: 16,  92: 17,  93: 18,  94: 19,  95: 20,  96: 21,  97: 22,  98: 23,  99: 24,  100: 25,  101: 26,  102: 27,  103: 28,  104: 29,  105: 30,  106: 31,  107: 32,  108: 33,  109: 34,  110: 35,  111: 36,  112: 37,  113: 38,  114: 39,  115: 40,  116: 41,  117: 42,  118: 43,  119: 44,  120: 45,  121: 46,  122: 54,  123: 55,  124: 56,  125: 57,  126: 58,  127: 59,  128: 60,  129: 61,  130: 62,  131: 112,  132: 113,  133: 114,  134: 115,  135: 116,  136: 117,  137: 118,  138: 119,  139: 120,  140: 121,  141: 122,  142: 123,  143: 124,  144: 125,  145: 126,  146: 127,  147: 128,  148: 129,  149: 130,  150: 131,  151: 132,  152: 133,  153: 134,  154: 135,  155: 136,  156: 137,  157: 138,  158: 139,  159: 140,  160: 141,  161: 142,  162: 143,  163: 144,  164: 145,  165: 146,  166: 147,  167: 148,  168: 149,  169: 150,  170: 151,  171: 152,  172: 153,  173: 154}
+
 def clean_str(text):
     text = text.lower()
     # Clean the text
@@ -53,6 +55,12 @@ def clean_str(text):
 
     return text.strip()
 
+def transform_pos(pos, seq_len = 90):
+    ret = [0] * seq_len
+    for i,v in enumerate(pos.strip().split(' ')):
+        ret[i] = pos2id[int(v)]
+    return np.array(ret)
+
 def load_data_and_labels(path):
     data = []
     all_tokens = []
@@ -81,7 +89,6 @@ def load_data_and_labels(path):
         data.append([id, sentence, e1, e2, relation])
 
     df = pd.DataFrame(data=data, columns=["id", "sentence", "e1", "e2", "relation"])
-
     pos1, pos2 = get_relative_position(df, 90)
 
     df['label'] = [class2label[r] for r in df['relation']]
@@ -94,7 +101,13 @@ def load_data_and_labels(path):
     y = df['label']
     labels_flat = y.values.ravel()
 
-    return all_tokens, labels_flat, e1, e2, pos1, pos2
+    # Transform pos
+    p1, p2 = [], []
+    for i in range(len(pos1)):
+        p1.append(transform_pos(pos1[i]))
+        p2.append(transform_pos(pos2[i]))
+
+    return all_tokens, labels_flat, e1, e2, p1, p2
 
 def get_relative_position(df, max_sentence_length):
     # Position data
@@ -114,6 +127,3 @@ def get_relative_position(df, max_sentence_length):
         pos2.append(p2)
 
     return pos1, pos2
-
-if __name__ == "__main__":
-    all_tokens, labels_flat, e1, e2, pos1, pos2 = load_data_and_labels('data/SemEval2010_task8_training/TRAIN_FILE.TXT')

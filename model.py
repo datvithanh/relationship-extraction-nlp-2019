@@ -19,12 +19,12 @@ class Let(nn.Module):
         return t1, t2
 
 class Attention(nn.Module):
-    def __init__(self, hidden_size, pos_size, attention_size):
+    def __init__(self, hidden_size, pos_embedding_dim, attention_size, pos_vocab_size):
         # attention_size = scalar(int)
         super(Attention, self).__init__()
         self.let = Let(hidden_size)
         self.denseE = nn.Linear(hidden_size*4, attention_size, bias=False)
-        self.denseP = nn.Linear(hidden_size + pos_size*2, attention_size, bias=False)
+        self.denseP = nn.Linear(hidden_size + pos_embedding_dim*2, attention_size, bias=False)
         self.u = nn.Parameter(torch.randn(attention_size, ))
 
     def forward(self, inputs, e1, e2, p1, p2):
@@ -32,7 +32,7 @@ class Attention(nn.Module):
         # e1, e2 = (batch, )
         # p1, p2 = (batch, seq_len, dist_emb_size)
 
-        # can pytorch track slicing in autograd?
+        # can pytorch track slicing with autograd? Yasss
         h_e1 = inputs.gather(1, e1.view(-1, 1, 1).expand(inputs.size(0), 1, inputs.size(2)))[:, 0, :]
         h_e2 = inputs.gather(1, e2.view(-1, 1, 1).expand(inputs.size(0), 1, inputs.size(2)))[:, 0, :]
 
@@ -51,14 +51,16 @@ class Attention(nn.Module):
         return output
 
 class Attention_bilstm_let(nn.Module):
-    def __init__(self, embedding_dim, hidden_size, pos_size, attention_size, num_classes):
+    def __init__(self, embedding_dim, hidden_size, pos_embedding_dim, attention_size, num_classes, pos_vocab_size=162):
         super(Attention_bilstm_let, self).__init__()
         
+        self.pos_embedding = nn.Embedding(pos_vocab_size, pos_embedding_dim)
+
         self.slf_attn = nn.MultiheadAttention(embedding_dim, 4)
         
         self.bilstm = nn.LSTM(embedding_dim, hidden_size, bidirectional=True, dropout=0.3)
 
-        self.attn = Attention(hidden_size*2, pos_size, attention_size)
+        self.attn = Attention(hidden_size*2, pos_embedding_dim, attention_size, pos_vocab_size)
 
         self.attn_dropout = nn.Dropout(0.5)
 
@@ -68,7 +70,9 @@ class Attention_bilstm_let(nn.Module):
         # X = (batch, seq_len, )
         X, _ = self.slf_attn(X, X, X) 
         X, _ = self.bilstm(X)
-        X = torch.transpose(X, 0, 1)
+
+        p1 = self.pos_embedding(p1)
+        p2 = self.pos_embedding(p2)
 
         attn = self.attn(X, e1, e2, p1, p2)
 
@@ -76,15 +80,4 @@ class Attention_bilstm_let(nn.Module):
 
         logits = self.ln(attn_drop)
         
-        return None
-
-model = Attention_bilstm_let(1024, 300, 50, 50, 18)
-
-X = torch.randn(90, 8, 1024)
-
-e1 = torch.randint(high=90, size=(8,))
-e2 = torch.randint(high=90, size=(8, ))
-
-p1 = torch.randn(8, 90, 50)
-p2 = torch.randn(8, 90, 50)
-model(X)
+        return logits
