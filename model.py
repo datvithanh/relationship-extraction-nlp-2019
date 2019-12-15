@@ -70,6 +70,7 @@ class Attention_bilstm_let(nn.Module):
         # X = (batch, seq_len, )
         X, _ = self.slf_attn(X, X, X) 
         X, _ = self.bilstm(X)
+        # X = torch.transpose(X, 0, 1)
 
         p1 = self.pos_embedding(p1)
         p2 = self.pos_embedding(p2)
